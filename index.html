@@ -1,95 +1,550 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <title>Bootstrap Example</title>
-  <meta charset="UTF-8" />
-    <!-- From bootstrap documentation : https://getbootstrap.com/docs/3.4/css/
-    To ensure proper rendering and touch zooming, add the viewport meta tag to your <head>.
-    -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- X-UA-Compatible is meant for compatability with internet explorer versions.  Many companies
-    have standardized there online documentation to be read in office with IE
-   -->
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
-      integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf"
-      crossorigin="anonymous"
-    />
-    <link
-      href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="style.css" />
-    <title>Work Day Scheduler</title>
-
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
-    <script src='./script.js'></script>
-  <style>
-    /* Set height of the grid so .sidenav can be 100% (adjust if needed) */
-    .row.content {height: 1500px}
+
+
+
+<style>
+body {
+margin: 0;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+nav {
+margin: 0;
+padding: 0;
+width: 150px;
+background-color: #2f77e4;
+position: fixed;
+height: 100%;
+overflow: auto;
+}
+nav a {
+display: block;
+color: rgb(255, 255, 255);
+font-weight: bolder;
+font-size: 20px;
+padding: 16px;
+text-decoration: none;
+}
+nav a.selected {
+background-color: rgb(15, 189, 20);
+color: rgb(255, 255, 255);
+}
+nav a:hover:not(.selected) {
+background-color: white;
+color: #2f77e4;
+}
+div.content {
+margin-left: 200px;
+padding: 1px 16px;
+height: 1000px;
+}
+@media screen and (max-width: 700px) {
+nav {
+width: 100%;
+height: auto;
+position: relative;
+}
+nav a {float: left;}
+div.content {margin-left: 0;}
+}
+
+.bg-primary {
+    background-color: lightblue;
+}
+
+.center-text-bg-black{
+    background-color: black;
+    text-align: center;
+    color:white;
+}
+</style>
+<script>
+const dayBase = "h5d"; //Append day number to it
+const currentDayForecastIx = 0;
+const fiveDayForecastIx    = 1;
+const replaceCity='Orlando';
+
+let weatherURLs = ["http://api.openweathermap.org/data/2.5/weather?q=Orlando&appid=8b3374952ed551fd8ee66530403608ee",
+                    "http://api.openweathermap.org/data/2.5/forecast?q=Orlando&appid=8b3374952ed551fd8ee66530403608ee"];
+
+
+function getTargetURL(index,city){
+    //debugger ;
+    let u = weatherURLs[index];
+    let arr  = u.split(replaceCity);
+    let result = arr[0] + city + arr[1];
+    return result;
+}
+
+$( document ).ready(function() {
+    getCurrentWeatherForCity("Atlanta");
+    load5DayForecast(1,"Atlanta");  
+});
+let sample = '{"dt":1594177200,'+
+'"main":{"temp":301.35,"feels_like":303.24,"temp_min":301.33,"temp_max":301.35,"pressure":1016,"sea_level":1016,"grnd_level":1013,"humidity":68,"temp_kf":0.02}, ' +
+'"weather":[{"id":803,"main":"Clouds","description":"broken clouds","icon":"04n"}],'+
+'"clouds":{"all":69},"wind":{"speed":3.81,"deg":271},'+
+'"sys":{"pod":"n"},'+ '"dt_txt":"2020-07-08 03:00:00"}';
+
+function load5DayForecast(index,city) {
+    var xhttp = new XMLHttpRequest();  //see figures and do JQuery with AJax  response = JQuery Ajax
     
-    /* Set gray background color and 100% height */
-    .sidenav {
-      background-color: #f1f1f1;
-      height: 100%;
-    }
+    xhttp.onreadystatechange = function() {
+      var toHtml = '"<h2>" +  city + "</h2>";';
+  
+      var myhttp = xhttp;
+      if (this.readyState == 4 && this.status == 200) {
+      
+       //
+       var response = this.response;
+      
+       let jsonObjArray = JSON.parse(response);
+       //debugger ;
+       if(jsonObjArray == null){
+
+           console.log("jsonObj null returning");
+       }
+       var listArray = jsonObjArray['list'];
+       var sixHundredHourArray = new Array();
+       var end = 0;
+       for(var i = 0; i < listArray.length; i++) {
+        var obj = listArray[i];
+        var dt = obj.dt;
+        var dtTxt = obj.dt_txt;
+        if(dtTxt.indexOf('06:00:00')> 0 ){  //get weather off of GMT time
+            sixHundredHourArray[end++] = obj;
+        }
+        //console.log(JSON.stringify(obj));
+
+        console.log(dt/1000 + "\t" + dtTxt);
+       }
+
+       for(var i = 0; i < sixHundredHourArray.length; i++) {
+        var obj = sixHundredHourArray[i];
+        var dt = obj.dt;
+        var dtTxt = obj.dt_txt;
+        var date = dtTxt.substring(0,dtTxt.indexOf('06:00:00')).trim();
+
+        console.log(date); //h5d1
+        var dateid = 'h5d'+ (i+1);
+        document.getElementById(dateid).innerHTML = moment(date).format('MM/DD/YYYY');
+        //Todo look up openweathermap API for retrieving an image
+        var icon = obj.weather[0].icon;
+        //<img v-bind:src="'http://openweathermap.org/img/w/' + item + '.png' "  />
+        //Have an image div like i5d append child image div to it with src
+
+      
+
+        var elem = document.createElement("img");
+        var imageUrl = "http://openweathermap.org/img/w/"+icon + '.png';
+        console.log(imageUrl);
+        elem.setAttribute("src", imageUrl );
+        elem.setAttribute("height", "25");
+        elem.setAttribute("width", "25");
+        elem.setAttribute("alt", "Weather Image");
+        //debugger ;
+        document.getElementById('i5d'+ (i+1)).innerHTML = elem.outerHTML;  //appendChild not working
+
+        var tempid = 't5d' + (i+1);
+        let mainVal = obj['main'];
+        console.log(mainVal);
+        var kelvin = mainVal["temp"];
+
+        let valNum = parseFloat(kelvin);
+        //(295.928K − 273.15) × 9/5 + 32 = 73°F
+
+        valNum = ((valNum-273.15) * 9/5 + 32).toFixed(2);
+
+        
+   
+        document.getElementById(tempid).innerHTML = "Temp: " + valNum + ' \xB0F.' ;
+       
+        var humidity =  mainVal["humidity"];
+        let humId = 'hm5d' + (i+1);
+        document.getElementById(humId).innerHTML = "Humidity: " + humidity + '%' ;
+
+        //document.getElementById("demo").innerHTML = "Paragraph changed!";
+        //write to the date field in the card below
+       }
+
+      
+       
+      } //if ready
+    }  // xhttp.onreadystatechange = function() {
+
+     
+
     
-    /* Set black background color, white text and some padding */
-    footer {
-      background-color: #555;
-      color: white;
-      padding: 15px;
-    }
+
+    let targetURL = getTargetURL(1,city);  //5 Day
+
+    console.log(targetURL);
+
+    xhttp.open("GET", targetURL, true);
+    xhttp.send();
+} //function end
+
+
+
+function  getUVIndex(longLatURL, toHtml, inner) {
+   
+
+        
+    console.log(longLatURL);
+    ///////////////////////////////
+
+    var xhttp = new XMLHttpRequest();  //see figures and do JQuery with AJax  response = JQuery Ajax
+   
+    fxhttp.onreadystatechange = function() {
+      
+      if (this.readyState == 4 && this.status == 200) {
+      
+       var response = this.response;
+       console.log(JSON.stringify(response));
+
+       
+       let jsonObj = JSON.parse(response);
+       if(jsonObj == null){
+           //debugger ;
+           console.log("jsonObj null returning");
+       }
+
+       //debugger ;
+       console.log("jsonObj " + JSON.stringify(jsonObj));
+
+       let value = jsonObj['value'];
+       console.log("value = " + value);
+       /**** *
+       for (var key in jsonObj) {
+         if (jsonObj.hasOwnProperty(key)) {
+           val = jsonObj[key];
+           //debugger ;
+           console.log(key + "-" + JSON.stringify(val));
+           if(key == "value"){
+               break;
+           }
+         }
+       }
+       */
+       //debugger ;
+       let uvIndex = value;;
+       console.log("uvIndex is " + uvIndex);
+       toHtml += "<h4>" + "UV Index: " + uvIndex + " </h4>";
+       document.getElementById(inner).innerHTML = toHtml; 
     
-    /* On small screens, set height to 'auto' for sidenav and grid */
-    @media screen and (max-width: 767px) {
-      .sidenav {
-        height: auto;
-        padding: 15px;
-      }
-      .row.content {height: auto;} 
+      }//if
+    } //xhttp.onreadystatechange = function()
+
+    ///////////////////////////
+
+    xhttp.open("GET", longLatURL, true);
+    xhttp.send();       
+
+}//function end
+
+
+async function getCurrentWeatherForCity(cityName){
+    //debugger ;
+    let value = await loadCityForecastData(cityName);
+    console.log(value)
+}
+
+function showCityWeatherData(cityLink){
+    //debugger ;
+    const city = cityLink.textContent;
+    getCurrentWeatherForCity(city);
+    load5DayForecast(1,city);  
+}
+
+async function loadCityForecastData(city) {
+    var index = 0;
+//debugger ;
+    var xhttp = new XMLHttpRequest();  //see figures and do JQuery with AJax  response = JQuery Ajax
+    
+//"{"coord":{"lon":-81.38,"lat":28.54},"weather":[{"id":800,"main":"Clear","description":"clear sky","icon":"01n"}],"base":"stations","main":{"temp":298.95,"feels_like":302.2,"temp_min":297.59,"temp_max":300.15,"pressure":1017,"humidity":83},"visibility":16093,"wind":{"speed":2.6,"deg":200},"clouds":{"all":1},"dt":1594183139,"sys":{"type":1,"id":5234,"country":
+//"US","sunrise":1594204468,"sunset":1594254389},"timezone":-14400,"id":4167147,"name":"Orlando","cod":200}"
+    xhttp.onreadystatechange = function() {
+
+      
+  
+      var myhttp = xhttp;
+      if (this.readyState == 4 && this.status == 200) {
+      
+       //
+       var response = this.response;
+      
+       let jsonObj = JSON.parse(response);
+       if(jsonObj == null){
+           //debugger ;
+           console.log("jsonObj null returning");
+       }
+
+       var dtTxt = jsonObj.dt_txt;
+       var date = dtTxt; //dtTxt.substring(0,dtTxt.indexOf(' ')).trim();
+       var dateFmt = ' ('+ moment(date).format('MM/DD/YYYY') +')';  //append image'
+       /***
+<div class="header">
+  <img src="img/logo.png" alt="logo" />
+  <h1>My website name</h1>
+</div>
+       ***/
+       //debugger ;
+       let weather = jsonObj.weather;
+       let icon = weather[0].icon;
+       var elem = document.createElement("img");
+       var imageUrl = "http://openweathermap.org/img/w/"+icon + '.png';
+        console.log(imageUrl);
+        elem.setAttribute("src", imageUrl );
+        elem.setAttribute("height", "25");
+        elem.setAttribute("width", "25");
+        elem.setAttribute("alt", "Weather Image");
+       
+        debugger ;
+       // document.getElementById('i5d'+ (i+1)).innerHTML = elem.outerHTML;  //appendChild not working
+
+       var toHtml = '<div class="header" style="background-color:lightblue;" width="20%" ><h2 width="20%">'  +  city + ' ' + elem.outerHTML + '</h2></div>';
+       var val = null;  //watch val
+       let mainVal = jsonObj['main'];
+       console.log(mainVal);
+       var        temp = mainVal["temp"];
+       console.log("temp = " + temp);
+       var humidity =  mainVal["humidity"];
+
+       let coordVal=jsonObj["coord"];
+       console.log("coord = " + coordVal);
+       var lat = coordVal["lat"];
+       var lon = coordVal["lon"];
+       
+       var windVal = jsonObj["wind"];
+       var windSpeed = windVal["speed"];
+
+    
+
+       //watch all variables
+     
+/*** 
+       for (var key in jsonObj) {
+         if (jsonObj.hasOwnProperty(key)) {
+           val = jsonObj[key];
+           //debugger ;
+           console.log(key + "-" + JSON.stringify(val));
+         }
+       }
+****/
+       
+       ////debugger ;
+
+       let cityFieldsMap = new Map();
+      
+       let imageSuffix = 0;
+       const dumpId = index == 0 ? "dumpJSON" :  "dump5JSON";
+       let inner = "";
+ ////debugger ;      
+        let valNum = parseFloat(temp);
+        //(295.928K − 273.15) × 9/5 + 32 = 73°F
+
+        valNum = ((valNum-273.15) * 9/5 + 32).toFixed(2);
+
+       cityFieldsMap.set("Temperature", valNum);
+
+        toHtml += "<h4>" + "Temperature: " + valNum + "</h4>";
+        console.log(toHtml);
+
+        toHtml += "<h4>" + "Wind Speed: " + windSpeed + "</h4>";
+
+        cityFieldsMap.set("Wind Speed", windSpeed);
+
+        toHtml += "<h4>" + "Humidity: " + humidity + "% </h4>";
+
+        cityFieldsMap.set("Humidity", humidity);
+
+        //let longLatURL = "https://api.openweathermap.org/data/2.5/forecast?lat=" + lat + "&lon=" + lon + "&appid=eee27dfad5db9dce473a5293caa3df71";
+       
+        let longLatURL ="https://api.openweathermap.org/data/2.5/uvi?lat=" + lat + 
+            "&lon=" + lon + "&appid=eee27dfad5db9dce473a5293caa3df71";
+
+        console.log(longLatURL);
+//debugger ;
+        inner = dumpId + imageSuffix;  
+        getUVIndex(longLatURL, toHtml, inner)
+
+      } //if ready
+    }  // xhttp.onreadystatechange = function() {
+
+     
+
+    let targetURL = getTargetURL(0,city);
+    console.log(targetURL);
+
+    xhttp.open("GET", targetURL, true);
+    xhttp.send();
+} //function end
+
+function  getUVIndex(longLatURL, toHtml, inner) {
+   
+
+        
+    console.log(longLatURL);
+    ///////////////////////////////
+
+    var xhttp = new XMLHttpRequest();  //see figures and do JQuery with AJax  response = JQuery Ajax
+   
+    xhttp.onreadystatechange = function() {
+      
+      if (this.readyState == 4 && this.status == 200) {
+      
+       var response = this.response;
+       console.log(JSON.stringify(response));
+
+       
+       let jsonObj = JSON.parse(response);
+       if(jsonObj == null){
+           //debugger ;
+           console.log("jsonObj null returning");
+       }
+
+       //debugger ;
+       console.log("jsonObj " + JSON.stringify(jsonObj));
+
+       let value = jsonObj['value'];
+       console.log("value = " + value);
+       //debugger ;
+       let uvIndex = value;;
+       console.log("uvIndex is " + uvIndex);
+       toHtml += "<h4>" + "UV Index: " + uvIndex + " </h4>";
+       document.getElementById(inner).innerHTML = toHtml; 
+    
+      }//if
+    } //xhttp.onreadystatechange = function()
+
+    ///////////////////////////
+
+    xhttp.open("GET", longLatURL, true);
+    xhttp.send();       
+
+}//function end
+
+
+
+async function getCurrentWeatherForCity(cityName){
+   ////debugger ;
+   let value = await loadCityForecastData(cityName);
+   console.log(value)
+}
+
+function getWeatherForCityOnEnterKey(e, textarea) {
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if(code == 13) { //Enter keycode
+       getWeatherForCity();
     }
-  </style>
+}
+
+function getWeatherForCity(){
+    let elem = $(document.getElementById("cityText"));
+    //debugger ;
+    let cityName = elem[0].value;
+    let displayFieldsForCity = getCurrentWeatherForCity(cityName);
+    console.log(JSON.stringify(displayFieldsForCity));
+}
+
+
+</script>
 </head>
 <body>
 
-<div class="container-fluid">
-  <div class="row content">
-    <div class="col-sm-3 sidenav">
-      <h4>Search for a City</h4>
-      <div class="input-group" id="city-list-search">
-        <input type="text" class="form-control" id="search-city" placeholder="Enter City">
-        <span class="input-group-btn">
-          <button class="btn btn-default" type="button">
-            <span class="glyphicon glyphicon-search"></span>
-          </button>
-        </span>
+<nav class="sideBar">
+<div class="input-group">
+    <input type="text" class="form-control" placeholder="Search City Weather" id="cityText" 
+        onKeyPress="getWeatherForCityOnEnterKey(event, this)">
+    <span class="input-group-btn">
+    <button class="btn btn-default" type="button" onclick="getWeatherForCity()" id="searchButton">
+        <span class="glyphicon glyphicon-search"></span>
+    </button>
+    </span>
+</div>
+<a class="selected" href="#">Home</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">Austin</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">Chicago</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">New York</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">Orlando</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">San Francisco</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">Seattle</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">Denver</a>
+<a onClick="showCityWeatherData(this); return false;" href="#">Atlanta</a>
+
+</nav>
+
+<div class="content">
+
+<h1 class="center-text-bg-black" > Weather Dashboard</h1>
+<div id="dumpJSON0"> 
+</div>
+
+    <div class="row">
+        <div class="col-lg-2">
+          <div class="card bg-primary">
+            <div class="card-body">
+              <h5 id="h5d1" class="card-title">Special title treatment</h5>
+              <div id="i5d1"></div>
+              <p id="t5d1" class="card-text">It's a broader card with text below as a natural lead-in to extra content. This content is a little longer.</p>
+              <p id="hm5d1" class="card-text">It</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-2">
+            <div class="card bg-primary">
+            <div class="card-body">
+              <h5 id="h5d2" class="card-title">Special title treatment</h5>
+              <div id="i5d2"></div>
+              <p id="t5d2" class="card-text">It's a broader card with text below as a natural lead-in to extra content. This content is a little longer.</p>
+              <p id="hm5d2" class="card-text">It</p>
+            </div>
+          </div>
+        </div>
+    
+
+    <div class="col-lg-2">
+        <div class="card bg-primary">
+          <div class="card-body">
+            <h5 id="h5d3" class="card-title">Special title treatment</h5>
+            <div id="i5d3"></div>
+            <p id="t5d3" class="card-text">It's a broader card with text below as a natural lead-in to extra content. This content is a little longer.</p>
+            <p id="hm5d3" class="card-text">It</p>
+          </div>
+        </div>
       </div>
-      <ul class="nav nav-pills nav-stacked" id="found-cities">
-
-      </ul><br>
-     
+      <div class="col-lg-2">
+        <div class="card bg-primary">
+          <div class="card-body">
+            <h5 id="h5d4" class="card-title">Special title treatment</h5>
+            <div id="i5d4"></div>
+            <p id="t5d4" class="card-text">It's a broader card with text below as a natural lead-in to extra content. This content is a little longer.</p>
+            <p id="hm5d4" class="card-text">It</p>
+          </div>
+        </div>
     </div>
-    <h1>Weather Dashboard</h1>
-    <div>
 
+
+  <div class="col-lg-2">
+    <div class="card bg-primary">
+      <div class="card-body">
+        <h5 id="h5d5" class="card-title">Special title treatment</h5>
+        <div id="i5d5"></div>
+        <p id="t5d5" class="card-text">It's a broader card with text below as a natural lead-in to extra content. This content is a little longer.</p>
+        <p id="hm5d5" class="card-text">It</p>
+      </div>
     </div>
-    <div class="col-sm-3" id="dumpJSON0"></div>
-    <h1>Dump 5 Weather</h1>
-    <div class="col-sm-3" id="dump5JSON0"></div>
-    <div class="col-sm-3" id="dump5JSON1"></div>  <div class="col-sm-3" id="dump5JSON2"></div> 
-     <div class="col-sm-3" id="dump3"></div>  <div class="col-sm-3" id="dump5JSON4"></div>   
+  </div>
 
-<footer class="container-fluid">
-  <p>Footer Text</p>
-</footer>
+</div>
+</div>
+
 
 </body>
 </html>
